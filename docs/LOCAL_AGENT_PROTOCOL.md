@@ -62,3 +62,29 @@ Estados: `waiting`, `monitoring`, `completed`, `error`, `attention`, `unknown`. 
 - Relay opcional precisa de autenticação própria, criptografia em trânsito, consentimento por canal e retenção mínima. Não expor o agente diretamente à internet.
 
 A forma de observar Codex permanece uma decisão técnica futura. Este protocolo não concede acesso à conta e não promete monitoramento com o navegador fechado.
+
+## Autorização temporária vinculada ao dashboard (requisito futuro)
+
+Não implementado na V0.1. O agente será um processo iniciado manualmente e aprovado pela TI, sem serviço permanente ou inicialização automática por padrão. Antes de autorizar, o processo poderá apenas realizar o pareamento/controle; não observará tarefas. Se a exigência for que nenhum processo exista antes de abrir o dashboard, o usuário precisará abrir a página primeiro e executar o atalho depois. O site não consegue impor a ordem de abertura de um executável arbitrário nem lançar/encerrar um processo sem integração instalada.
+
+A autorização de observar exige cumulativamente sessão autenticada com o dashboard, ativação explícita, tarefas na lista de autorização, lease válido e conexão confirmada com uma integração Codex para essas tarefas. A mera presença da aba GPT ou de um processo não é evidência da conexão. A definição de atividade é a disponibilidade da fonte autorizada, não estar digitando ou manter a aba GPT aberta.
+
+Endpoints propostos adicionais (todos autenticados, inclusive health/controle com informações sensíveis):
+
+| Método | Caminho                          | Uso                                                        |
+| ------ | -------------------------------- | ---------------------------------------------------------- |
+| POST   | `/monitoring-sessions`           | Criar lease por consentimento explícito e lista de tarefas |
+| POST   | `/monitoring-sessions/:id/renew` | Renovar lease da sessão proprietária                       |
+| DELETE | `/monitoring-sessions/:id`       | Revogar lease e solicitar encerramento                     |
+
+Requisitos de implementação:
+
+- Proposta inicial: heartbeat a cada 5 s, TTL máximo de 15 s, a validar em Edge/Windows sob throttling. O agente usa relógio monotônico próprio, nunca timestamps controlados pelo browser. Rejeita renovações atrasadas, repetidas, de sessão expirada ou de outro proprietário. Reinício, suspensão ou retomada do PC invalidam a sessão; watchdog e testes de falha são necessários para sustentar os limites.
+- Uma aba proprietária, sem posse automática por outra aba. Pareamento e autorização são distintos; um token pareado não libera monitoramento. Lease/estado ativo não são restaurados por localStorage, reload, reinício ou reconexão. A expiração exige novo consentimento explícito.
+- Sem conexão Codex válida, parar observação, invalidar autorização e informar falha. Não inferir conclusão por desconexão. Validar autorização em cada coleta, processamento de evento e envio de alerta, inclusive eventos atrasados.
+- Desativação explícita retorna confirmação somente após invalidar o lease, parar observadores/áudio e cancelar filas ainda não enviadas. O dashboard não mostra “Desativado” antes da confirmação; em falha mostra revogação pendente. Depois da confirmação, o processo encerra e fecha o listener local. Não existe endpoint de execução arbitrária de comandos.
+- Ao perder heartbeat/expirar: mesma limpeza e encerramento. Falhas do processo/SO podem atrasar o encerramento; não prometer garantia absoluta de término em 15 s sem supervisão e validação reais. Um processo inicialmente não pareado encerra após um prazo curto de configuração, também a definir.
+- Fechar aba, crash ou corte da rede não garantem aviso. `pagehide`/beacon podem ser auxiliares, nunca a base da revogação. Abas abertas suspensas podem perder lease; parar é o comportamento esperado. Ocultar/minimizar não revoga imediatamente, desde que haja heartbeat válido. Reabertura requer novo início manual do processo se já encerrado.
+- Mensagens já entregues ao relay/provedor não são canceláveis por encerrar o agente. Canais futuros precisam de controle de fila e minimização próprios. Este modo não mantém alarmes após fechar o dashboard.
+
+Critérios de aceitação antes de liberar: sem monitoramento antes de ativar; tarefas fora da lista ignoradas; desativar com confirmação; fechar/crash da aba e queda da rede; aba suspensa; suspensão/retomada do Windows; Codex desconectado; duas abas; reload sem reativação; eventos atrasados após revogação; nenhum envio pendente após expiração; processo encerra e exige abertura manual seguinte. A página de ajuda não implementa esses controles.

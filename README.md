@@ -81,3 +81,7 @@ O workflow `.github/workflows/deploy-pages.yml` instala com `npm ci`, executa te
 URL esperada após um deploy bem-sucedido: **https://leonardocamargorossato.github.io/CodexAlarm/**.
 
 O build local não publica o site. HTTPS do Pages é necessário para a API de notificações; permissões e suporte continuam dependendo do navegador.
+
+## Agente Windows, instalação e privacidade
+
+A página **Agente e privacidade**, acessível pelo cabeçalho e rodapé ou pelo caminho `/CodexAlarm/#agente`, explica a aprovação de TI para PCs corporativos, avaliação LGPD, instalação planejada e o desenho de autorização temporária. Não existe instalador para baixar nesta versão. O futuro agente deverá monitorar apenas com ativação explícita no dashboard e fonte Codex conectada; ao perder a autorização, deverá parar e encerrar. Fechar a aba será tratado por expiração do lease, sem garantia de notificação instantânea. Consulte o protocolo para os requisitos e testes que ainda precisam ser implementados.
